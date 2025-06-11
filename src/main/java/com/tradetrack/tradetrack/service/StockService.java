@@ -1,16 +1,15 @@
 package com.tradetrack.tradetrack.service;
 
 import com.tradetrack.tradetrack.Enum.Category;
-import com.tradetrack.tradetrack.dto.StockDetailDto;
-import com.tradetrack.tradetrack.dto.StockHomepageDto;
-import com.tradetrack.tradetrack.dto.StockNameDto;
+import com.tradetrack.tradetrack.response.HomeResponse;
+import com.tradetrack.tradetrack.request.StockNameRequest;
 import com.tradetrack.tradetrack.entity.Stock;
 
 import java.util.List;
 
 public interface StockService {
 
-    List<StockNameDto> getStockNameList();
+    List<StockNameRequest> getStockNameList();
 
     void updateStockName();
 
@@ -18,5 +17,5 @@ public interface StockService {
 
     void updateStockDetails();
 
-    List<StockHomepageDto> getTopStocksByCategory(Category category, boolean isTop);
+    List<HomeResponse> getTopStocksByCategory(Category category, boolean isTop);
 }

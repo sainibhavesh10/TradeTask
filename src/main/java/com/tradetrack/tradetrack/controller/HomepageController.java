@@ -1,7 +1,7 @@
 package com.tradetrack.tradetrack.controller;
 
 import com.tradetrack.tradetrack.Enum.Category;
-import com.tradetrack.tradetrack.dto.StockHomepageDto;
+import com.tradetrack.tradetrack.response.HomeResponse;
 import com.tradetrack.tradetrack.service.OtpService;
 import com.tradetrack.tradetrack.service.StockService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,11 +25,11 @@ public class HomepageController {
     private OtpService otpService;
 
     @GetMapping("/getStock")
-    public ResponseEntity<List<StockHomepageDto>> getStock(
+    public ResponseEntity<List<HomeResponse>> getStock(
             @RequestParam(value = "category", defaultValue = "LARGE") Category category,
             @RequestParam(value = "isTop" , defaultValue = "true") boolean isTop
     ){
-        List<StockHomepageDto> stockHomepageDtoList = stockService.getTopStocksByCategory(category,isTop);
+        List<HomeResponse> stockHomepageDtoList = stockService.getTopStocksByCategory(category,isTop);
         return new ResponseEntity<>(stockHomepageDtoList, HttpStatus.OK);
     }
 

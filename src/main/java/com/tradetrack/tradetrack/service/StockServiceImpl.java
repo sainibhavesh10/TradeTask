@@ -1,9 +1,9 @@
 package com.tradetrack.tradetrack.service;
 
 import com.tradetrack.tradetrack.Enum.Category;
-import com.tradetrack.tradetrack.dto.StockDetailDto;
-import com.tradetrack.tradetrack.dto.StockHomepageDto;
-import com.tradetrack.tradetrack.dto.StockNameDto;
+import com.tradetrack.tradetrack.request.StockDetailRequest;
+import com.tradetrack.tradetrack.response.HomeResponse;
+import com.tradetrack.tradetrack.request.StockNameRequest;
 import com.tradetrack.tradetrack.entity.Stock;
 import com.tradetrack.tradetrack.repo.StockRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,21 +30,21 @@ public class StockServiceImpl implements StockService{
     @Value("${apikey.FMP}")
     private String apikeyFMP;
 
-    public List<StockNameDto> getStockNameList() {
+    public List<StockNameRequest> getStockNameList() {
         String url = "https://financialmodelingprep.com/api/v3/stock/list?apikey=" + apikeyFMP;
-        ResponseEntity<List<StockNameDto>> response = restTemplate.exchange(
+        ResponseEntity<List<StockNameRequest>> response = restTemplate.exchange(
                 url,
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<List<StockNameDto>>() {}
+                new ParameterizedTypeReference<List<StockNameRequest>>() {}
         );
         return response.getBody();
     }
 
     public void updateStockName(){
-        List<StockNameDto> stocks = getStockNameList();
+        List<StockNameRequest> stocks = getStockNameList();
         List<Stock> stockToSave = new ArrayList<>();
-        for(StockNameDto stock : stocks){
+        for(StockNameRequest stock : stocks){
             if("NYSE".equals(stock.getExchangeShortName()) ){
                 Stock temp = new Stock();
                 temp.setName(stock.getName());
@@ -59,25 +59,25 @@ public class StockServiceImpl implements StockService{
         String joinedSymbols = String.join(",", symbols);
         String url = "https://financialmodelingprep.com/api/v3/quote/" + joinedSymbols + "?apikey=" + apikeyFMP;
         System.out.println(url + ".........................................................");
-        ResponseEntity<List<StockDetailDto>> response = restTemplate.exchange(
+        ResponseEntity<List<StockDetailRequest>> response = restTemplate.exchange(
                 url,
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<List<StockDetailDto>>() {}
+                new ParameterizedTypeReference<List<StockDetailRequest>>() {}
         );
-        List<StockDetailDto> stockDetailDtoList = response.getBody();
-        if (stockDetailDtoList == null) return new ArrayList<>();
+        List<StockDetailRequest> stockDetailRequestList = response.getBody();
+        if (stockDetailRequestList == null) return new ArrayList<>();
         List<Stock> stocks = new ArrayList<>();
-        for(StockDetailDto stockDetailDto : stockDetailDtoList){
+        for(StockDetailRequest stockDetailRequest : stockDetailRequestList){
             Stock stock = new Stock();
-            stock.setName(stockDetailDto.getName());
-            stock.setSymbol(stockDetailDto.getSymbol());
-            stock.setPrice(stockDetailDto.getPrice());
-            stock.setChangePercentage(stockDetailDto.getChangesPercentage());
-            stock.setChangeValue(stockDetailDto.getChange());
-            stock.setYearHigh(stockDetailDto.getYearHigh());
-            stock.setYearLow(stockDetailDto.getYearLow());
-            stock.setMarketCap(stockDetailDto.getMarketCap());
+            stock.setName(stockDetailRequest.getName());
+            stock.setSymbol(stockDetailRequest.getSymbol());
+            stock.setPrice(stockDetailRequest.getPrice());
+            stock.setChangePercentage(stockDetailRequest.getChangesPercentage());
+            stock.setChangeValue(stockDetailRequest.getChange());
+            stock.setYearHigh(stockDetailRequest.getYearHigh());
+            stock.setYearLow(stockDetailRequest.getYearLow());
+            stock.setMarketCap(stockDetailRequest.getMarketCap());
             stock.setCategory();
             stocks.add(stock);
         }
@@ -107,7 +107,7 @@ public class StockServiceImpl implements StockService{
         stockRepository.saveAll(finalStocks);
     }
 
-    public List<StockHomepageDto> getTopStocksByCategory(Category category,boolean isTop){
+    public List<HomeResponse> getTopStocksByCategory(Category category, boolean isTop){
         List<Stock> stocks;
         if(isTop){
             stocks = stockRepository.findTop50ByCategoryOrderByChangePercentageDesc(category);
@@ -115,8 +115,8 @@ public class StockServiceImpl implements StockService{
         else{
             stocks = stockRepository.findTop50ByCategoryOrderByChangePercentageAsc(category);
         }
-        List<StockHomepageDto> stockHomepage = stocks.stream()
-                .map(stock -> new StockHomepageDto(
+        List<HomeResponse> homeResponseList = stocks.stream()
+                .map(stock -> new HomeResponse(
                         stock.getSymbol(),
                         stock.getName(),
                         stock.getPrice(),
@@ -124,6 +124,6 @@ public class StockServiceImpl implements StockService{
                         stock.getChangeValue()
                 ))
                 .collect(Collectors.toList());
-        return stockHomepage;
+        return homeResponseList;
     }
 }

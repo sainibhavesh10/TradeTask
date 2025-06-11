@@ -21,15 +21,27 @@ public class User {
     @Column(length = 50, nullable = false, unique = true)
     private String username;
 
-    @Column(length = 100, nullable = false, unique = true)
+    @Column(length = 100, unique = true)
     private String email;
 
     @Column(nullable = false)
     private String password;
 
     @Enumerated(EnumType.STRING)
-    private UserRole role = UserRole.USER;
+    @Column(nullable = false)
+    private UserRole role = UserRole.TEMP_USER;
 
     @Column(name = "is_verified", nullable = false)
     private boolean isVerified = false;
+
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

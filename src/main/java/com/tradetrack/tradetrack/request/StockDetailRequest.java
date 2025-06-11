@@ -1,11 +1,15 @@
-package com.tradetrack.tradetrack.dto;
+package com.tradetrack.tradetrack.request;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
 @Data
-public class StockDetailDto {
+@AllArgsConstructor
+@NoArgsConstructor
+public class StockDetailRequest {
     private String symbol;
     private String name;
     private BigDecimal price;

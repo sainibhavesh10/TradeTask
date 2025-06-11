@@ -9,19 +9,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/stock")
+@RequestMapping("/admin")
 public class UpdateStocksController {
 
     @Autowired
     private StockService stockService;
 
-    @GetMapping("/updateName")
+    @GetMapping("/updateStockName")
     public ResponseEntity<String> updateStockName(){
         stockService.updateStockName();
         return new ResponseEntity<>("Names Updates",HttpStatus.OK);
     }
 
-    @GetMapping("updateDetails")
+    @GetMapping("updateStockDetails")
     public ResponseEntity<String> updateStockDetails(){
         stockService.updateStockDetails();
         return new ResponseEntity<>("Details Updates",HttpStatus.OK);

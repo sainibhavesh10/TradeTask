@@ -24,7 +24,7 @@ public class Otp {
     private String code;
 
     @Column(name = "expiry_time", nullable = false)
-    private LocalDateTime expiryTime = LocalDateTime.now().plusMinutes(10);;
+    private LocalDateTime expiryTime = LocalDateTime.now().plusMinutes(10);
 
     @Column(name = "is_used", nullable = false)
     private boolean isUsed = false;
