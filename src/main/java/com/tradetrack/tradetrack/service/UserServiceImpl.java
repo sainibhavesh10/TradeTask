@@ -7,6 +7,7 @@ import com.tradetrack.tradetrack.security.CustomUserDetails;
 import com.tradetrack.tradetrack.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -31,15 +32,14 @@ public class UserServiceImpl implements UserService{
         this.jwtUtil = jwtUtil;
     }
 
-
-    @Override
-    public String getCurrentUsername() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
-    }
-
     @Override
     public boolean checkPassword(String rawPassword, String hashedPassword) {
         return passwordEncoder.matches(rawPassword, hashedPassword);
+    }
+
+    @Override
+    public User getUserByUsername(String username) throws UsernameNotFoundException{
+        return userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User don't exist " + username));
     }
 
     @Override
@@ -77,10 +77,10 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
-    public String validateEmail(String email,String otp) throws Exception{
+    public String validateEmail(String username, String email,String otp) throws Exception{
         if(!otpService.validateOtp(email, otp)) throw new Exception("Invalid otp");
 
-        User user = userRepository.findByUsername(getCurrentUsername()).orElseThrow(() -> new Exception("User not found"));
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new Exception("User not found"));
 
         user.setEmail(email);
         user.setVerified(true);

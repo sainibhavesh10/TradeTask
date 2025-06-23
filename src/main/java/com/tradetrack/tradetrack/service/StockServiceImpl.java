@@ -107,23 +107,21 @@ public class StockServiceImpl implements StockService{
         stockRepository.saveAll(finalStocks);
     }
 
-    public List<HomeResponse> getTopStocksByCategory(Category category, boolean isTop){
+    public List<Stock> getTopStocksByCategory(Category category, boolean isTop){
         List<Stock> stocks;
+
         if(isTop){
             stocks = stockRepository.findTop50ByCategoryOrderByChangePercentageDesc(category);
         }
         else{
             stocks = stockRepository.findTop50ByCategoryOrderByChangePercentageAsc(category);
         }
-        List<HomeResponse> homeResponseList = stocks.stream()
-                .map(stock -> new HomeResponse(
-                        stock.getSymbol(),
-                        stock.getName(),
-                        stock.getPrice(),
-                        stock.getChangePercentage(),
-                        stock.getChangeValue()
-                ))
-                .collect(Collectors.toList());
-        return homeResponseList;
+
+        return stocks;
+    }
+
+    @Override
+    public Stock getStockBySymbol(String symbol) {
+        return stockRepository.findBySymbol(symbol).orElseThrow(() -> new RuntimeException("Stock not found " + symbol));
     }
 }

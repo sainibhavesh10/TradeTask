@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/home")
@@ -29,7 +30,17 @@ public class HomepageController {
             @RequestParam(value = "category", defaultValue = "LARGE") Category category,
             @RequestParam(value = "isTop" , defaultValue = "true") boolean isTop
     ){
-        List<HomeResponse> stockHomepageDtoList = stockService.getTopStocksByCategory(category,isTop);
+        List<HomeResponse> stockHomepageDtoList = stockService.getTopStocksByCategory(category,isTop)
+                .stream()
+                .map(stock -> new HomeResponse(
+                        stock.getSymbol(),
+                        stock.getName(),
+                        stock.getPrice(),
+                        stock.getChangePercentage(),
+                        stock.getChangeValue()
+                ))
+                .collect(Collectors.toList());
+
         return new ResponseEntity<>(stockHomepageDtoList, HttpStatus.OK);
     }
 
