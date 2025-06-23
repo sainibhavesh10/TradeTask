@@ -4,12 +4,14 @@ import com.tradetrack.tradetrack.request.LoginRequest;
 import com.tradetrack.tradetrack.request.RegisterRequest;
 import com.tradetrack.tradetrack.request.ValidationRequest;
 import com.tradetrack.tradetrack.response.AuthResponse;
+import com.tradetrack.tradetrack.security.CustomUserDetails;
 import com.tradetrack.tradetrack.security.JwtUtil;
 import com.tradetrack.tradetrack.service.OtpService;
 import com.tradetrack.tradetrack.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -70,9 +72,13 @@ public class AuthController {
     }
 
     @PostMapping("/validateEmail")
-    public ResponseEntity<?> validateEmail(@RequestBody ValidationRequest validationRequest){
+    public ResponseEntity<?> validateEmail(
+            @RequestBody ValidationRequest validationRequest,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+            ){
         try {
             String jwtToken = userService.validateEmail(
+                    userDetails.getUsername(),
                     validationRequest.getEmail(),
                     validationRequest.getOtp()
             );

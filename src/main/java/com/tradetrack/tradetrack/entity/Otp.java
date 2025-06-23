@@ -24,12 +24,15 @@ public class Otp {
     private String code;
 
     @Column(name = "expiry_time", nullable = false)
+    @Builder.Default
     private LocalDateTime expiryTime = LocalDateTime.now().plusMinutes(10);
 
     @Column(name = "is_used", nullable = false)
+    @Builder.Default
     private boolean isUsed = false;
 
     @Column(name = "attempts")
+    @Builder.Default
     private int attempts = 0;
 
     public void increaseAttempt(){

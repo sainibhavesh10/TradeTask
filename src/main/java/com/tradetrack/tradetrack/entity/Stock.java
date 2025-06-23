@@ -46,12 +46,22 @@ public class Stock {
     @Column(length = 10)
     private Category category;
 
-    @Column(name = "last_updated", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+    @Column(name = "last_updated")
     private LocalDateTime lastUpdated;
 
     public void setCategory() {
-        if(marketCap<=2000000000L) this.category= Category.SMALL;
-        else if(marketCap<=10000000000L) this.category=Category.MID;
+        if (marketCap == null) return;
+
+        if(marketCap<=2_000_000_000L) this.category= Category.SMALL;
+        else if(marketCap<=10_000_000_000L) this.category=Category.MID;
         else this.category=Category.LARGE;
     }
+
+    @PrePersist
+    @PreUpdate
+    public void beforeSave() {
+        this.lastUpdated = LocalDateTime.now();
+        setCategory();
+    }
+
 }
