@@ -15,10 +15,7 @@ import java.time.LocalDateTime;
 public class Stock {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
-
-    @Column(length = 10, nullable = false, unique = true)
+    @Column(length = 10, nullable = false)
     private String symbol;
 
     @Column(length = 100, nullable = false)

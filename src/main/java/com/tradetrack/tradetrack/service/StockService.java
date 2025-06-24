@@ -9,13 +9,9 @@ import java.util.List;
 
 public interface StockService {
 
-    List<StockNameRequest> getStockNameList(); //internal
+    void updateStockDetailsWithName(); //internal
 
-    void updateStockName(); //internal
-
-    List<Stock> getStockDetailList(List<String> symbols); //internal
-
-    void updateStockDetails(); //by admin or scheduler
+    void updateStockDetailsInfo(); //by admin or scheduler
 
     List<Stock> getTopStocksByCategory(Category category, boolean isTop); //for Homepage
 

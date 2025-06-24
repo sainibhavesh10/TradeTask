@@ -6,6 +6,7 @@ import com.tradetrack.tradetrack.response.HomeResponse;
 import com.tradetrack.tradetrack.request.StockNameRequest;
 import com.tradetrack.tradetrack.entity.Stock;
 import com.tradetrack.tradetrack.repo.StockRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -30,7 +31,21 @@ public class StockServiceImpl implements StockService{
     @Value("${apikey.FMP}")
     private String apikeyFMP;
 
-    public List<StockNameRequest> getStockNameList() {
+    private static Stock getStock(StockDetailRequest stockDetailRequest) {
+        Stock stock = new Stock();
+        stock.setName(stockDetailRequest.getName());
+        stock.setSymbol(stockDetailRequest.getSymbol());
+        stock.setPrice(stockDetailRequest.getPrice());
+        stock.setChangePercentage(stockDetailRequest.getChangesPercentage());
+        stock.setChangeValue(stockDetailRequest.getChange());
+        stock.setYearHigh(stockDetailRequest.getYearHigh());
+        stock.setYearLow(stockDetailRequest.getYearLow());
+        stock.setMarketCap(stockDetailRequest.getMarketCap());
+        stock.setCategory();
+        return stock;
+    }
+
+    private List<StockNameRequest> getStockNameList() {
         String url = "https://financialmodelingprep.com/api/v3/stock/list?apikey=" + apikeyFMP;
         ResponseEntity<List<StockNameRequest>> response = restTemplate.exchange(
                 url,
@@ -41,21 +56,7 @@ public class StockServiceImpl implements StockService{
         return response.getBody();
     }
 
-    public void updateStockName(){
-        List<StockNameRequest> stocks = getStockNameList();
-        List<Stock> stockToSave = new ArrayList<>();
-        for(StockNameRequest stock : stocks){
-            if("NYSE".equals(stock.getExchangeShortName()) ){
-                Stock temp = new Stock();
-                temp.setName(stock.getName());
-                temp.setSymbol(stock.getSymbol());
-                stockToSave.add(temp);
-            }
-        }
-        stockRepository.saveAll(stockToSave);
-    }
-
-    public List<Stock> getStockDetailList(List<String> symbols){
+    private List<Stock> getStockDetailList(List<String> symbols){
         String joinedSymbols = String.join(",", symbols);
         String url = "https://financialmodelingprep.com/api/v3/quote/" + joinedSymbols + "?apikey=" + apikeyFMP;
         System.out.println(url + ".........................................................");
@@ -69,22 +70,31 @@ public class StockServiceImpl implements StockService{
         if (stockDetailRequestList == null) return new ArrayList<>();
         List<Stock> stocks = new ArrayList<>();
         for(StockDetailRequest stockDetailRequest : stockDetailRequestList){
-            Stock stock = new Stock();
-            stock.setName(stockDetailRequest.getName());
-            stock.setSymbol(stockDetailRequest.getSymbol());
-            stock.setPrice(stockDetailRequest.getPrice());
-            stock.setChangePercentage(stockDetailRequest.getChangesPercentage());
-            stock.setChangeValue(stockDetailRequest.getChange());
-            stock.setYearHigh(stockDetailRequest.getYearHigh());
-            stock.setYearLow(stockDetailRequest.getYearLow());
-            stock.setMarketCap(stockDetailRequest.getMarketCap());
-            stock.setCategory();
+            Stock stock = getStock(stockDetailRequest);
             stocks.add(stock);
         }
         return stocks;
     }
 
-    public void updateStockDetails() {
+    @Transactional
+    @Override
+    public void updateStockDetailsWithName(){
+        List<StockNameRequest> stocks = getStockNameList();
+        List<Stock> stockToSave = new ArrayList<>();
+        for(StockNameRequest stock : stocks){
+            if("NYSE".equals(stock.getExchangeShortName()) ){
+                Stock temp = new Stock();
+                temp.setName(stock.getName());
+                temp.setSymbol(stock.getSymbol());
+                stockToSave.add(temp);
+            }
+        }
+        stockRepository.saveAll(stockToSave);
+        updateStockDetailsInfo();
+    }
+
+    @Override
+    public void updateStockDetailsInfo() {
         List<Stock> allStocks = stockRepository.findAll();
         List<Stock> finalStocks = new ArrayList<>();
         int batchSize = 30;
@@ -100,13 +110,10 @@ public class StockServiceImpl implements StockService{
             finalStocks.addAll(getStockDetailList(symbols));
         }
 
-        for (int i = 0; i < finalStocks.size(); i += 1) {
-            finalStocks.get(i).setId(allStocks.get(i).getId());
-        }
-
         stockRepository.saveAll(finalStocks);
     }
 
+    @Override
     public List<Stock> getTopStocksByCategory(Category category, boolean isTop){
         List<Stock> stocks;
 

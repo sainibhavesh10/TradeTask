@@ -15,15 +15,15 @@ public class UpdateStocksController {
     @Autowired
     private StockService stockService;
 
-    @GetMapping("/updateStockName")
+    @GetMapping("/updateStocksWithName")
     public ResponseEntity<String> updateStockName(){
-        stockService.updateStockName();
+        stockService.updateStockDetailsWithName();
         return new ResponseEntity<>("Names Updates",HttpStatus.OK);
     }
 
-    @GetMapping("updateStockDetails")
+    @GetMapping("updateStocksInfo")
     public ResponseEntity<String> updateStockDetails(){
-        stockService.updateStockDetails();
+        stockService.updateStockDetailsInfo();
         return new ResponseEntity<>("Details Updates",HttpStatus.OK);
     }
 
