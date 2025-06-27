@@ -8,10 +8,13 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "stocks")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString
+@EqualsAndHashCode(of = "symbol")
 public class Stock {
 
     @Id
