@@ -7,10 +7,13 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "otp")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString(exclude = {"code"})
+@EqualsAndHashCode(of = "id")
 public class Otp {
 
     @Id
@@ -24,18 +27,26 @@ public class Otp {
     private String code;
 
     @Column(name = "expiry_time", nullable = false)
-    @Builder.Default
-    private LocalDateTime expiryTime = LocalDateTime.now().plusMinutes(10);
+    private LocalDateTime expiryTime;
 
     @Column(name = "is_used", nullable = false)
-    @Builder.Default
-    private boolean isUsed = false;
+    private boolean isUsed;
 
     @Column(name = "attempts")
-    @Builder.Default
-    private int attempts = 0;
+    private Integer attempts;
 
     public void increaseAttempt(){
         this.attempts++;
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        if (expiryTime == null) {
+            this.expiryTime = LocalDateTime.now().plusMinutes(10);
+        }
+        if (attempts == null) {
+            this.attempts = 0;
+        }
+        this.isUsed = false;
     }
 }

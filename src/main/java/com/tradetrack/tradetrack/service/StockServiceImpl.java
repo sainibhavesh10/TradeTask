@@ -6,13 +6,13 @@ import com.tradetrack.tradetrack.response.HomeResponse;
 import com.tradetrack.tradetrack.request.StockNameRequest;
 import com.tradetrack.tradetrack.entity.Stock;
 import com.tradetrack.tradetrack.repo.StockRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
