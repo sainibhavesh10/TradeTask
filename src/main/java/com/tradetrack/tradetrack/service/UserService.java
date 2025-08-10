@@ -11,7 +11,7 @@ public interface UserService {
 
     String validateEmail(String username, String email,String otp) throws Exception;
 
-    boolean checkPassword(String rawPassword, String hashedPassword);
+    void checkPassword(String rawPassword, String hashedPassword);
 
     User getUserByUsername(String username) throws UsernameNotFoundException;
 

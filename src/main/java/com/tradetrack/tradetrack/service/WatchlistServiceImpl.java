@@ -2,10 +2,10 @@ package com.tradetrack.tradetrack.service;
 
 import com.tradetrack.tradetrack.Enum.SortBy;
 import com.tradetrack.tradetrack.Enum.SortDirection;
+import com.tradetrack.tradetrack.Exceptions.Types.WatchlistException;
 import com.tradetrack.tradetrack.entity.Stock;
 import com.tradetrack.tradetrack.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +35,8 @@ public class WatchlistServiceImpl implements WatchlistService{
         Stock stock = stockService.getStockBySymbol(stockSymbol);
 
         if (user.getWatchlist().contains(stock)) {
-            throw new IllegalArgumentException("Stock is already present in watchlist.");
+            throw new WatchlistException("Stock is already present in watchlist.",
+                    WatchlistException.ErrorType.STOCK_ALREADY_IN_WATCHLIST);
         }
 
         user.getWatchlist().add(stock);
@@ -50,14 +51,15 @@ public class WatchlistServiceImpl implements WatchlistService{
         Stock stock = stockService.getStockBySymbol(stockSymbol);
 
         if (!user.getWatchlist().contains(stock)) {
-            throw new IllegalArgumentException("Stock not in watchlist.");
+            throw new WatchlistException("Stock is not present in watchlist.",
+                    WatchlistException.ErrorType.STOCK_NOT_IN_WATCHLIST);
         }
 
         user.getWatchlist().remove(stock);
     }
 
     @Override
-    public List<Stock> getUserWatchlistSorted(String username, SortBy sortBy, SortDirection direction) throws UsernameNotFoundException {
+    public List<Stock> getUserWatchlistSorted(String username, SortBy sortBy, SortDirection direction){
         User user = userService.getUserByUsername(username);
 
         Comparator<Stock> comparator;
@@ -68,7 +70,8 @@ public class WatchlistServiceImpl implements WatchlistService{
             case DAY_CHANGE -> comparator = Comparator.comparing(Stock::getChangePercentage);
             case YEAR_HIGH -> comparator = Comparator.comparing(Stock::getYearHigh);
             case YEAR_LOW -> comparator = Comparator.comparing(Stock::getYearLow);
-            default -> throw new IllegalArgumentException("Unsupported sort field");
+            default -> throw new WatchlistException("Unsupported sort field",
+                    WatchlistException.ErrorType.UNSUPPORTED_SORT_FIELD);
         }
 
         if (direction == SortDirection.DESC){

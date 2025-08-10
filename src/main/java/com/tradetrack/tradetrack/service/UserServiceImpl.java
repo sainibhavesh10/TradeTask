@@ -1,17 +1,14 @@
 package com.tradetrack.tradetrack.service;
 
 import com.tradetrack.tradetrack.Enum.UserRole;
+import com.tradetrack.tradetrack.Exceptions.Types.UserException;
 import com.tradetrack.tradetrack.entity.User;
 import com.tradetrack.tradetrack.repo.UserRepository;
 import com.tradetrack.tradetrack.security.CustomUserDetails;
 import com.tradetrack.tradetrack.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @Service
 public class UserServiceImpl implements UserService{
@@ -33,19 +30,26 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
-    public boolean checkPassword(String rawPassword, String hashedPassword) {
-        return passwordEncoder.matches(rawPassword, hashedPassword);
+    public void checkPassword(String rawPassword, String hashedPassword) {
+        if (hashedPassword == null || !passwordEncoder.matches(rawPassword, hashedPassword)) {
+            throw new UserException("Invalid credentials", UserException.ErrorType.INVALID_CREDENTIALS);
+        }
     }
 
     @Override
-    public User getUserByUsername(String username) throws UsernameNotFoundException{
-        return userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User don't exist " + username));
+    public User getUserByUsername(String username){
+        return userRepository.findByUsername(username).orElseThrow(() -> new UserException(
+                "User don't exist " + username,
+                UserException.ErrorType.USER_NOT_FOUND
+        ));
     }
 
     @Override
     public String register(String username,String password) throws Exception{
-        Optional<User> optionalUser = userRepository.findByUsername(username);
-        if(optionalUser.isPresent()) throw new Exception("User Already Exists");
+        boolean exists = userRepository.findByUsername(username).isPresent();
+        if (exists) {
+            throw new UserException("User already exists", UserException.ErrorType.USER_ALREADY_EXISTS);
+        }
 
         User user = new User();
         user.setUsername(username);
@@ -54,33 +58,24 @@ public class UserServiceImpl implements UserService{
         userRepository.save(user);
 
         //creating jwt
-        CustomUserDetails userDetails = new CustomUserDetails(user);
-        String jwtToken = jwtUtil.generateToken(userDetails);
-        return jwtToken;
+        return jwtUtil.generateToken(new CustomUserDetails(user));
     }
 
     @Override
-    public String login(String username,String password) throws Exception{
-        Optional<User> optionalUser = userRepository.findByUsername(username);
-        if(optionalUser.isEmpty()) throw new Exception("User Don't Exists");
+    public String login(String username,String password){
+        User user = getUserByUsername(username);
 
-        User user = optionalUser.get();
-
-        if(!checkPassword(password,user.getPassword())) throw new Exception("Invalid credentials");
+        checkPassword(password,user.getPassword());
 
         //creating jwt
-        CustomUserDetails userDetails = new CustomUserDetails(user);
-
-        String jwtToken = jwtUtil.generateToken(userDetails);
-
-        return jwtToken;
+        return jwtUtil.generateToken(new CustomUserDetails(user));
     }
 
     @Override
-    public String validateEmail(String username, String email,String otp) throws Exception{
-        if(!otpService.validateOtp(email, otp)) throw new Exception("Invalid otp");
+    public String validateEmail(String username, String email,String otp){
+        otpService.validateOtp(email, otp);
 
-        User user = userRepository.findByUsername(username).orElseThrow(() -> new Exception("User not found"));
+        User user = getUserByUsername(username);
 
         user.setEmail(email);
         user.setVerified(true);
@@ -89,10 +84,6 @@ public class UserServiceImpl implements UserService{
         userRepository.save(user);
 
         //creating jwt
-        CustomUserDetails userDetails = new CustomUserDetails(user);
-
-        String jwtToken = jwtUtil.generateToken(userDetails);
-
-        return jwtToken;
+        return jwtUtil.generateToken(new CustomUserDetails(user));
     }
 }
