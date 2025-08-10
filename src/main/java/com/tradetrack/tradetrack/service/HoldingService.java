@@ -8,8 +8,6 @@ public interface HoldingService {
 
     void sellStock(String username, String stockSymbol, int quantityToSell);
 
-    //List<PerStockSummary> getAllStockSummary(String username); internal
-
     PortfolioResponse getPortfolio(String username);
 
 }

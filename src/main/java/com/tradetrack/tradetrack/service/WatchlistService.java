@@ -13,6 +13,6 @@ public interface WatchlistService {
 
     void removeStockFromWatchlist(String username, String stockSymbol);
 
-    List<Stock> getUserWatchlistSorted(String username, SortBy sortBy, SortDirection direction) throws UsernameNotFoundException;
+    List<Stock> getUserWatchlistSorted(String username, SortBy sortBy, SortDirection direction);
 }
 

@@ -1,8 +1,8 @@
 package com.tradetrack.tradetrack.service;
 
 import com.tradetrack.tradetrack.Enum.Category;
+import com.tradetrack.tradetrack.Exceptions.Types.StockException;
 import com.tradetrack.tradetrack.request.StockDetailRequest;
-import com.tradetrack.tradetrack.response.HomeResponse;
 import com.tradetrack.tradetrack.request.StockNameRequest;
 import com.tradetrack.tradetrack.entity.Stock;
 import com.tradetrack.tradetrack.repo.StockRepository;
@@ -17,7 +17,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class StockServiceImpl implements StockService{
@@ -47,55 +46,75 @@ public class StockServiceImpl implements StockService{
 
     private List<StockNameRequest> getStockNameList() {
         String url = "https://financialmodelingprep.com/api/v3/stock/list?apikey=" + apikeyFMP;
-        ResponseEntity<List<StockNameRequest>> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                null,
-                new ParameterizedTypeReference<List<StockNameRequest>>() {}
-        );
-        return response.getBody();
-    }
+        try {
+            ResponseEntity<List<StockNameRequest>> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    null,
+                    new ParameterizedTypeReference<List<StockNameRequest>>() {
+                    }
+            );
+
+            if (response.getBody() == null || response.getBody().isEmpty()) {
+                throw new StockException("No stock names returned from API",
+                        StockException.ErrorType.API_NO_DATA);
+            }
+            return response.getBody();
+        }
+        catch (Exception e){
+            throw new StockException("Failed to fetch stock name list from API",
+                    StockException.ErrorType.API_FAILURE);
+        }
+    } //get all available stocks basic info from fmp
 
     private List<Stock> getStockDetailList(List<String> symbols){
+
+        if (symbols == null || symbols.isEmpty()) {
+            throw new StockException("Symbol list cannot be empty",
+                    StockException.ErrorType.INVALID_REQUEST);
+        }
+
         String joinedSymbols = String.join(",", symbols);
         String url = "https://financialmodelingprep.com/api/v3/quote/" + joinedSymbols + "?apikey=" + apikeyFMP;
-        System.out.println(url + ".........................................................");
-        ResponseEntity<List<StockDetailRequest>> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                null,
-                new ParameterizedTypeReference<List<StockDetailRequest>>() {}
-        );
-        List<StockDetailRequest> stockDetailRequestList = response.getBody();
-        if (stockDetailRequestList == null) return new ArrayList<>();
-        List<Stock> stocks = new ArrayList<>();
-        for(StockDetailRequest stockDetailRequest : stockDetailRequestList){
-            Stock stock = getStock(stockDetailRequest);
-            stocks.add(stock);
+        try {
+            ResponseEntity<List<StockDetailRequest>> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    null,
+                    new ParameterizedTypeReference<List<StockDetailRequest>>() {
+                    }
+            );
+            List<StockDetailRequest> stockDetailRequestList = response.getBody();
+            if (stockDetailRequestList == null || stockDetailRequestList.isEmpty()) {
+                throw new StockException("No stock details returned for symbols: " + joinedSymbols,
+                        StockException.ErrorType.API_NO_DATA);
+            }
+
+            List<Stock> stocks = new ArrayList<>();
+            for (StockDetailRequest stockDetailRequest : stockDetailRequestList) {
+                if (stockDetailRequest.getPrice() == null) {
+                    continue;
+                }
+                stocks.add(getStock(stockDetailRequest));
+            }
+            return stocks;
         }
-        return stocks;
-    }
+        catch (Exception e){
+            throw new StockException("Error fetching stock details for symbols: " + joinedSymbols,
+                    StockException.ErrorType.API_FAILURE);
+        }
+    } //get given symbols detailed info from fmp(has limit)
 
     @Transactional
-    @Override
-    public void updateStockDetailsWithName(){
-        List<StockNameRequest> stocks = getStockNameList();
-        List<Stock> stockToSave = new ArrayList<>();
-        for(StockNameRequest stock : stocks){
-            if("NYSE".equals(stock.getExchangeShortName()) ){
-                Stock temp = new Stock();
-                temp.setName(stock.getName());
-                temp.setSymbol(stock.getSymbol());
-                stockToSave.add(temp);
-            }
-        }
-        stockRepository.saveAll(stockToSave);
-        updateStockDetailsInfo();
-    }
+    private void updateStockDetailsInfo(List<Stock> allStocks) {
 
-    @Override
-    public void updateStockDetailsInfo() {
-        List<Stock> allStocks = stockRepository.findAll();
+        stockRepository.deleteAllInBatch();
+
+        if (allStocks.isEmpty()) {
+            throw new StockException("No stocks available in database to update",
+                    StockException.ErrorType.NO_DATA_TO_PROCESS);
+        }
+
         List<Stock> finalStocks = new ArrayList<>();
         int batchSize = 30;
 
@@ -109,9 +128,37 @@ public class StockServiceImpl implements StockService{
 
             finalStocks.addAll(getStockDetailList(symbols));
         }
-
         stockRepository.saveAll(finalStocks);
-    }
+    } //update all the given stocks in db also deletes all previous one
+
+    @Transactional
+    @Override
+    public void updateStockDetails(){
+        List<StockNameRequest> stocks = getStockNameList();
+        if (stocks == null || stocks.isEmpty()) {
+            throw new StockException("No stock names to update",
+                    StockException.ErrorType.NO_DATA_TO_PROCESS);
+        }
+
+        List<Stock> allStocks = new ArrayList<>();
+        for(StockNameRequest stock : stocks){
+            if("NYSE".equals(stock.getExchangeShortName()) ){
+                if (stock.getName() == null || stock.getSymbol() == null) {
+                    continue;
+                }
+                Stock temp = new Stock();
+                temp.setName(stock.getName());
+                temp.setSymbol(stock.getSymbol());
+                allStocks.add(temp);
+            }
+        }
+        if (allStocks.isEmpty()) {
+            throw new StockException("No NYSE stocks found to save",
+                    StockException.ErrorType.NO_DATA_TO_PROCESS);
+        }
+
+        updateStockDetailsInfo(allStocks);
+    } //update fresh stocks
 
     @Override
     public List<Stock> getTopStocksByCategory(Category category, boolean isTop){
@@ -125,10 +172,18 @@ public class StockServiceImpl implements StockService{
         }
 
         return stocks;
-    }
+    } //gets top 50 stocks for homepage
 
     @Override
     public Stock getStockBySymbol(String symbol) {
-        return stockRepository.findBySymbol(symbol).orElseThrow(() -> new RuntimeException("Stock not found " + symbol));
-    }
+        if (symbol == null || symbol.trim().isEmpty()) {
+            throw new StockException("Stock symbol cannot be null or empty",
+                    StockException.ErrorType.INVALID_REQUEST);
+        }
+        return stockRepository.findBySymbol(symbol)
+                .orElseThrow(() -> new StockException(
+                        "Stock not found " + symbol,
+                        StockException.ErrorType.NOT_FOUND
+                ));
+    } //as name says
 }

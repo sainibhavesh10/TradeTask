@@ -1,5 +1,6 @@
 package com.tradetrack.tradetrack.service;
 
+import com.tradetrack.tradetrack.Exceptions.Types.PortfolioException;
 import com.tradetrack.tradetrack.entity.Holding;
 import com.tradetrack.tradetrack.entity.Stock;
 import com.tradetrack.tradetrack.entity.User;
@@ -41,7 +42,10 @@ public class HoldingServiceImpl implements HoldingService{
         Stock stock = stockService.getStockBySymbol(stockSymbol);
 
         if (quantityToBuy <= 0){
-            throw new RuntimeException("You can't buy less than one stock");
+            throw new PortfolioException(
+                    "Quantity to sell must be greater than zero.",
+                    PortfolioException.ErrorType.INVALID_QUANTITY
+            );
         }
 
         Holding holding = Holding.builder()
@@ -64,7 +68,10 @@ public class HoldingServiceImpl implements HoldingService{
         Stock stock = stockService.getStockBySymbol(stockSymbol);
 
         if (quantityToSell <= 0) {
-            throw new IllegalArgumentException("Quantity to sell must be greater than 0");
+            throw new PortfolioException(
+                    "Quantity to sell must be greater than zero.",
+                    PortfolioException.ErrorType.INVALID_QUANTITY
+            );
         }
 
         List<Holding> holdings = holdingRepo.findByUserAndStockOrderByCreatedAtAsc(user, stock);
@@ -74,7 +81,10 @@ public class HoldingServiceImpl implements HoldingService{
                 .sum();
 
         if(totalQuantity < quantityToSell){
-            throw new RuntimeException("Insufficient quantity to sell");
+            throw new PortfolioException(
+                    "Cannot sell more stocks than currently held.",
+                    PortfolioException.ErrorType.INSUFFICIENT_HOLDINGS
+            );
         }
 
         //selling stocks with FIFO
@@ -103,6 +113,7 @@ public class HoldingServiceImpl implements HoldingService{
 
         List<Holding> holdings = holdingRepo.findAllByUser(user);
 
+        //grouping according to stock name
         Map<Stock,List<Holding>> grouped = holdings.stream()
                 .collect(Collectors.groupingBy(Holding::getStock));
 
@@ -115,6 +126,8 @@ public class HoldingServiceImpl implements HoldingService{
             List<Holding> userHoldings = entry.getValue();
 
             int totalQty = userHoldings.stream().mapToInt(Holding::getQuantity).sum();
+
+            //getting net amount that we invested in this stock
             BigDecimal totalBuy = userHoldings.stream()
                     .map(h -> h.getPricePerUnit().multiply(BigDecimal.valueOf(h.getQuantity())))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -123,12 +136,14 @@ public class HoldingServiceImpl implements HoldingService{
                     ? totalBuy.divide(BigDecimal.valueOf(totalQty), 2, RoundingMode.HALF_UP)
                     : BigDecimal.ZERO;
 
+            //calculating overall profit or loss
             BigDecimal currValue = stock.getPrice().multiply(BigDecimal.valueOf(totalQty));
             BigDecimal profitLoss = currValue.subtract(totalBuy);
 
             totalInvestment = totalInvestment.add(totalBuy);
             totalCurrentValue = totalCurrentValue.add(currValue);
 
+            //adding this to final list
             summaries.add(
                     PerStockSummary.builder()
                             .symbol(stock.getSymbol())

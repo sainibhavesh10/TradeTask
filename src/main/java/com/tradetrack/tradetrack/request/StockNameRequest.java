@@ -15,9 +15,6 @@ public class StockNameRequest {
     private String name;
     private BigDecimal price;
     private String exchange;
-
-    @JsonProperty("exchangeShortName")
     private String exchangeShortName;
-
     private String type;
 }
