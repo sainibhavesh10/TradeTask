@@ -47,12 +47,3 @@ TradeTask is a high-performance financial backend built with **Spring Boot**. It
 | `/api/portfolio/add` | `POST` | Records a new stock purchase into the user's portfolio. |
 | `/api/watchlist` | `GET` | Fetches the user's saved/favorited stocks. |
 | `/api/watchlist/add/{id}`| `POST` | Adds a ticker to the user's personal watchlist. |
-
----
-
-## ⚙️ Setup & Installation
-
-1. **Clone the Repository:**
-   ```bash
-   git clone [https://github.com/sainibhavesh10/TradeTask.git](https://github.com/sainibhavesh10/TradeTask.git)
-   cd TradeTask
